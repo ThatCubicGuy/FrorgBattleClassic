@@ -1,0 +1,9 @@
+# Build files
+*/x64/
+x64/
+
+# Cache stuff
+.vs/
+
+# Non-frorg files
+random_test_place/
