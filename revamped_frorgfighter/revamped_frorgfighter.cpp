@@ -1,7 +1,6 @@
 #include <iostream>
 #include <random>
 #include <cmath>
-#include <windows.h>
 #include <cstring>
 
 using namespace std;
@@ -10,10 +9,10 @@ mt19937 rng(dev());
 uniform_int_distribution<uint32_t> uint_dist15(1, 15);
 uniform_int_distribution<uint32_t> uint_dist32767(0, 32767);
 int damage, spell, turn = 1, luckdmgrate = 2147483647, luckhitrate = 10, hatedmgrate = 2, atkth16 = 90, repeat = 0, cm1 = 0;
-double random, hdrng, mdrng, ldrng;
+double prng, hdrng, mdrng, ldrng;
 char p1, p2;
 void genrngs() {
-    random = (double)uint_dist32767(rng) * 100 / 32767;
+    prng = (double)uint_dist32767(rng) * 100 / 32767;
     ldrng = (double)uint_dist32767(rng) / 32767 / 5 + 0.6;
     mdrng = (double)uint_dist32767(rng) / 32767 / 5 + 0.9;
     hdrng = (double)uint_dist32767(rng) / 32767 / 5 + 1.2;
@@ -102,7 +101,23 @@ int lunadialII(int& x);
 int maidassault(fighter& tg);
 int punishment(int& x, fighter& tg);
 
-HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+int hConsole = 0;
+void SetConsoleTextAttribute(int shift, int color) {
+    int i = 30;
+    color = (color + shift) % 8;
+    if (color < 8) i += color;
+    else i += color + 2;
+    cout << "\e[" << i << 'm';
+}
+
+// Source - https://stackoverflow.com/a/10613664
+// Posted by HighCommander4, modified by community. See post 'Timeline' for change history
+// Retrieved 2026-10-13, License - CC BY-SA 3.0
+#include <thread>
+#include <chrono>
+void Sleep(int ms) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+}
 
 ostream& operator<<(ostream& os, const fighter& x) {
     os << x.name;
@@ -1111,13 +1126,13 @@ int lottery(fighter& b) {
         cout << "Not enough LUCK!\n";
         return -1;
     }
-    else if (random < b.spd - a.special / luckhitrate) {
+    else if (prng < b.spd - a.special / luckhitrate) {
         cout << a.name << " tries to act, but " << b.name << " acts faster!\n";
         a.special -= cost;
     }
     else {
         cout << a.name << " visits the lottery!\n";
-        if (random < 20) {
+        if (prng < 20) {
             damage = 10 * a.atk - b.def;
             if (damage <= 0) {
                 cout << a.name << " uses a formidable attack, yet " << b.name << " is able to block it in its entirety, taking 0 damage!\n";
@@ -1127,7 +1142,7 @@ int lottery(fighter& b) {
                 cout << a.name << " wins the grand prize! " << b.name << " takes " << damage << " damage!\n";
             }
         }
-        else if (random < 40) {
+        else if (prng < 40) {
             damage = 2 * a.special;
             if (damage <= 0) {
                 cout << a.name << "'s attack hits, but deals 0 damage!\n";
@@ -1137,12 +1152,12 @@ int lottery(fighter& b) {
                 cout << a.name << " wins the second prize! " << b.name << " takes " << damage << " damage!\n";
             }
         }
-        else if (random < 60) {
+        else if (prng < 60) {
             damage = a.special / 10;
             b.def -= damage;
             cout << a.name << " finds " << b.name << "'s ticket and uses it instead! " << b.name << " loses " << damage << " DEF!\n";
         }
-        else if (random < 80) {
+        else if (prng < 80) {
             damage = round(a.special / 50);
             a.spd += damage;
             b.spd -= damage;
@@ -1182,7 +1197,7 @@ int bslap(fighter& b) {
         cout << a.name << " slaps " << b.name << "!\n";
         for (int i = 0; i < 1.01 + a.special / luckdmgrate; i++) {
             genrngs();
-            if (random < b.spd - a.special / luckhitrate) {
+            if (prng < b.spd - a.special / luckhitrate) {
                 cout << a.name << "'s attack missed!\n";
             }
             else {
@@ -1209,7 +1224,7 @@ int barf(fighter& b) {
     }
     else {
         cout << a.name << " did not enjoy their last meal!\n";
-        if (random < b.spd - a.special / luckhitrate) {
+        if (prng < b.spd - a.special / luckhitrate) {
             cout << a.name << "'s attack missed!\n";
         }
         else {
@@ -1266,7 +1281,7 @@ int wakeupslap(fighter& b) {
         else {
             for (int i = 0; i < 20; i++) {
                 genrngs();
-                if (random < b.spd - a.special / luckhitrate) hitcount--;
+                if (prng < b.spd - a.special / luckhitrate) hitcount--;
             }
             cout << a.name << "'s attacks hit " << hitcount;
             if (hitcount == 1) cout << " time";
@@ -1289,7 +1304,7 @@ int tornado(fighter& b) {
     }
     else {
         cout << a.name << " launches a furious tornado towards " << b.name << "!\n";
-        if (random < b.spd - a.special / luckhitrate) {
+        if (prng < b.spd - a.special / luckhitrate) {
             cout << a.name << "'s attack missed!\n";
         }
         else {
@@ -1325,7 +1340,7 @@ int slice(fighter& b) {
     }
     else {
         cout << a.name << " slices " << b.name << " with their lucky knife!\n";
-        if (random < b.spd - a.special / luckhitrate) {
+        if (prng < b.spd - a.special / luckhitrate) {
             cout << a.name << "'s attack missed!\n";
         }
         else {
@@ -1351,12 +1366,12 @@ int bababooey(fighter& b) {
     }
     else {
         cout << a.name << " throws a cat at " << b.name << "!\n";
-        if (random < 50) {
+        if (prng < 50) {
             cout << a.name << "'s cat wanders off into the universe!\n";
         }
         else {
             genrngs();
-            if (random < b.spd - a.special / luckhitrate) {
+            if (prng < b.spd - a.special / luckhitrate) {
                 cout << a.name << "'s cat nearly hits, but " << b.name << " dodges it in time!\n";
             }
             else {
@@ -1385,7 +1400,7 @@ int boing(int& x, fighter& b) {
     }
     else {
         cout << a.name << " tries to punch " << b.name << " with an extendo grip!\n";
-        if (random < b.spd - a.special / luckhitrate) {
+        if (prng < b.spd - a.special / luckhitrate) {
             cout << a.name << "'s attack missed!\n";
         }
         else {
@@ -1412,7 +1427,7 @@ int aneurysm(fighter& b) {
     }
     else {
         cout << a.name << " types some random gibberish in the chat!\n";
-        if (random < b.spd - a.special / luckhitrate) {
+        if (prng < b.spd - a.special / luckhitrate) {
             cout << a.name << "'s attack missed!\n";
         }
         else {
@@ -1444,7 +1459,7 @@ int oneshot(fighter& b) {
     }
     else {
         cout << a.name << " gets MAD at " << b.name << "!\n";
-        if (random < b.spd) {
+        if (prng < b.spd) {
             int atkboost = 50;
             a.atk += atkboost;
             cout << a.name << " misses their smack and gets EVEN MORE MAD! Their attack is increased by " << atkboost << "!\n";
@@ -1470,7 +1485,7 @@ int bludgeon(fighter& b) {
         cout << a.name << " grabs a nearby stick and approaches " << b.name << "!\n";
         for (int i = 0; i < 3; i++) {
             genrngs();
-            if (random < b.spd - a.special / luckhitrate) {
+            if (prng < b.spd - a.special / luckhitrate) {
                 cout << a.name << "'s attack missed!\n";
             }
             else {
@@ -1496,7 +1511,7 @@ int frogstuffs(fighter& b) {
         return -1;
     }
     else {
-        if (random < b.spd - a.special / luckhitrate) {
+        if (prng < b.spd - a.special / luckhitrate) {
             cout << a.name << "'s attack missed!\n";
         }
         else {
@@ -1539,7 +1554,7 @@ int diediediedie(fighter& b) {
         cout << a.name << " lets out some anger on " << b.name << "!\n";
         for (int i = 0; i < 4; i++) {
             genrngs();
-            if (random < b.spd - a.special / luckhitrate) {
+            if (prng < b.spd - a.special / luckhitrate) {
                 cout << a.name << "'s attack missed!\n";
             }
             else {
@@ -1565,7 +1580,7 @@ int fin(fighter& b) {
     }
     else {
         cout << a.name << " has had it up to HERE with " << b.name << "!\n";
-        if (random < b.spd - a.special / luckhitrate) {
+        if (prng < b.spd - a.special / luckhitrate) {
             cout << a.name << "'s attack did not reach " << b.name << "'s ears!\n";
         }
         else {
@@ -1590,7 +1605,7 @@ int multislash(fighter& a) {
         return -1;
     }
     else {
-        if (random < a.spd - 10) {
+        if (prng < a.spd - 10) {
             cout << b.name << "'s attack missed!\n";
         }
         else {
@@ -1614,7 +1629,7 @@ int sharpprec(fighter& a) {
         return -1;
     }
     else {
-        if (random < a.spd) {
+        if (prng < a.spd) {
             cout << b.name << "'s attack missed!\n";
         }
         else {
@@ -1638,7 +1653,7 @@ int wound(fighter& a) {
         return -1;
     }
     else {
-        if (random < a.spd) {
+        if (prng < a.spd) {
             cout << b.name << "'s attack misses!\n";
         }
         else {
@@ -1681,7 +1696,7 @@ int vampwatch(fighter& a) {
         return -1;
     }
     else {
-        if (random < a.spd) {
+        if (prng < a.spd) {
             cout << b.name << "'s attack misses!\n";
         }
         else {
@@ -1725,7 +1740,7 @@ int pslam(fighter& a) {
         return -1;
     }
     else {
-        if (random < a.spd) {
+        if (prng < a.spd) {
             cout << b.name << "'s attack missed!\n";
         }
         else {
@@ -1763,7 +1778,7 @@ int summonknives(fighter& a) {
         return -1;
     }
     else {
-        if (random < a.spd) {
+        if (prng < a.spd) {
             cout << b.name << "'s attack missed!\n";
         }
         else {
@@ -1802,7 +1817,7 @@ int knifeslash(fighter& a) {
         return -1;
     }
     else {
-        if (random < a.spd) {
+        if (prng < a.spd) {
             cout << b.name << "'s attack missed!\n";
         }
         else {
@@ -1831,7 +1846,7 @@ int ro_tat_e(fighter& a) {
         cout << b.name << " starts RO-TAT-ING!\n";
         for (int i = 0; i < 5; i++) {
             genrngs();
-            if (random < a.spd + inacc) {
+            if (prng < a.spd + inacc) {
                 cout << b.name << "'s attack missed!\n";
             }
             else {
@@ -1856,7 +1871,7 @@ int karmabeach(fighter& a) {
         return -1;
     }
     else {
-        if (random < a.spd) {
+        if (prng < a.spd) {
             cout << b.name << "'s attack missed!\n";
         }
         else {
@@ -1890,7 +1905,7 @@ int backstab(fighter& a) {
     }
     else {
         cout << b.name << " sneaks behind " << a.name << "!\n";
-        if (random < a.spd - 5) {
+        if (prng < a.spd - 5) {
             cout << b.name << "'s attack missed!\n";
         }
         else {
@@ -1917,7 +1932,7 @@ int faketp(fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << c.name << "'s attack missed!\n";
         }
         else {
@@ -1941,7 +1956,7 @@ int darkblast(fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << c.name << "'s attack missed!\n";
         }
         else {
@@ -1965,7 +1980,7 @@ int creepvine(int& x, fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << c.name << "'s attack missed!\n";
         }
         else {
@@ -1983,7 +1998,7 @@ int multiblast(fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << c.name << "'s attack missed!\n";
         }
         else {
@@ -2007,7 +2022,7 @@ int ghosttoss(fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << c.name << "'s attack missed!\n";
         }
         else {
@@ -2035,7 +2050,7 @@ int realknife(fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << c.name << "'s attack missed!\n";
         }
         else {
@@ -2059,7 +2074,7 @@ int srsproblem(fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << c.name << "'s attack missed!\n";
         }
         else {
@@ -2096,7 +2111,7 @@ int wannaknow(fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << c.name << "'s attack missed!\n";
         }
         else {
@@ -2171,7 +2186,7 @@ int illsign(fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << d.name << "'s attack missed!\n";
         }
         else {
@@ -2195,7 +2210,7 @@ int slvsign(fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << d.name << "'s attack missed!\n";
         }
         else {
@@ -2223,7 +2238,7 @@ int eternalmek(fighter& tg) {
         int tdmg = 0;
         for (int i = 0; i < 4; i++) {
             genrngs();
-            if (random < tg.spd) {
+            if (prng < tg.spd) {
                 cout << d.name << "'s knife missed!\n";
             }
             else {
@@ -2252,7 +2267,7 @@ int lumricochet(fighter& tg) {
     }
     else {
         cout << d.name << " launches a VERY powerful knife at " << tg.name << "!\n";
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << d.name << "'s attack missed!\n";
         }
         else {
@@ -2281,7 +2296,7 @@ int imagtime(fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << d.name << "'s attack missed!\n";
         }
         else {
@@ -2324,7 +2339,7 @@ int soulsculp(fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << d.name << "'s attack missed!\n";
         }
         else {
@@ -2349,7 +2364,7 @@ int cricochet(fighter& tg) {
     }
     else {
         cout << d.name << " throws a purple knife at " << tg.name << "!\n";
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << d.name << "'s attack missed!\n";
         }
         else {
@@ -2373,7 +2388,7 @@ int jackdababy(fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << d.name << "'s attack missed!\n";
         }
         else {
@@ -2415,7 +2430,7 @@ int sakworld(int& x, fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << d.name << "'s attack missed!\n";
         }
         else {
@@ -2438,7 +2453,7 @@ int statsteal(fighter& tg) {
         int k = 0, j = 1;
         for (int i = 0; i < 4; i++) {
             genrngs();
-            if (random < tg.spd) {
+            if (prng < tg.spd) {
                 cout << d.name << "'s knife missed!\n";
             }
             else {
@@ -2503,7 +2518,7 @@ int maidassault(fighter& tg) {
         return -1;
     }
     else {
-        if (random < tg.spd) {
+        if (prng < tg.spd) {
             cout << d.name << "'s attack missed!\n";
         }
         else {
